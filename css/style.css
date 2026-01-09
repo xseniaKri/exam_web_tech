@@ -98,3 +98,58 @@ a:hover {
     margin-bottom: 10px;
 }
 
+.course-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.course-btn {
+    width: 100%;
+}
+
+.orders-table {
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.orders-table th {
+    background-color: var(--color-purple);
+    color: white;
+    font-weight: 500;
+    text-align: center;
+    vertical-align: middle;
+    padding: 12px 8px;
+}
+
+.orders-table td {
+    vertical-align: middle;
+    text-align: center;
+}
+
+.orders-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.orders-table tbody tr:hover {
+    background-color: rgba(111, 66, 193, 0.05);
+}
+
+.orders-table .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+#no-orders-message {
+    background-color: white;
+    border-radius: 8px;
+}
+
+#cabinet-section {
+    min-height: 400px;
+}
+

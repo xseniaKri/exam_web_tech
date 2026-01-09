@@ -156,46 +156,41 @@
         </div>
     </section>
 
-    <section class="py-5 bg-light">
+    <section id="courses-section" class="py-5">
         <div class="container">
-            <h2 class="text-center fw-bold mb-5">Наши курсы</h2>
-            <div class="row g-4">
-                <div class="col-md-3">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body text-center">
-                            <h3 class="card-title h4 fw-bold">Английский</h3>
-                            <p class="card-text">От Beginner до Advanced</p>
-                            <a href="#" class="btn btn-outline-primary">Подробнее</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body text-center">
-                            <h3 class="card-title h4 fw-bold">Немецкий</h3>
-                            <p class="card-text">От A1 до C1</p>
-                            <a href="#" class="btn btn-outline-primary">Подробнее</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body text-center">
-                            <h3 class="card-title h4 fw-bold">Французский</h3>
-                            <p class="card-text">От A1 до B2</p>
-                            <a href="#" class="btn btn-outline-primary">Подробнее</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body text-center">
-                            <h3 class="card-title h4 fw-bold">Испанский</h3>
-                            <p class="card-text">От A1 до B2</p>
-                            <a href="#" class="btn btn-outline-primary">Подробнее</a>
-                        </div>
-                    </div>
-                </div>
+            <h2 class="text-center fw-bold mb-5">Предлагаемые курсы</h2>
+            <div id="courses-container" class="row g-4"></div>
+            <div id="courses-pagination" class="mt-4"></div>
+            <div class="text-center mt-4">
+                <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#orderModal" onclick="openOrderModal()">
+                    Оформить заявку
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section id="cabinet-section" class="py-5 bg-light">
+        <div class="container">
+            <h2 class="text-center fw-bold mb-5">Личный кабинет</h2>
+            <div class="table-responsive">
+                <table class="table table-hover orders-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Курс/Репетитор</th>
+                            <th>Дата</th>
+                            <th>Время</th>
+                            <th>Длительность</th>
+                            <th>Стоимость</th>
+                            <th>Опции</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table-body"></tbody>
+                </table>
+            </div>
+            <div id="no-orders-message" class="text-center py-5 d-none">
+                <p class="text-muted mb-0">У вас пока нет заявок</p>
             </div>
         </div>
     </section>
@@ -205,6 +200,135 @@
             <p class="mb-0">&copy; 2024 Language School. Все права защищены.</p>
         </div>
     </footer>
+
+    <div class="modal fade" id="orderModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="orderModalTitle">Оформление заявки</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="order-form">
+                        <input type="hidden" id="order-id">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="tutor_id" class="form-label">Репетитор</label>
+                                <select class="form-select" id="tutor_id" name="tutor_id">
+                                    <option value="">Выберите репетитора</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="course_id" class="form-label">Курс</label>
+                                <select class="form-select" id="course_id" name="course_id">
+                                    <option value="">Выберите курс</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="date_start" class="form-label">Дата начала</label>
+                                <input type="date" class="form-control" id="date_start" name="date_start" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="time_start" class="form-label">Время</label>
+                                <input type="time" class="form-control" id="time_start" name="time_start" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="duration" class="form-label">Длительность (часы)</label>
+                                <input type="number" class="form-control" id="duration" name="duration" min="1" max="40">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="persons" class="form-label">Количество человек</label>
+                                <input type="number" class="form-control" id="persons" name="persons" min="1" max="20" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="price" class="form-label">Стоимость</label>
+                                <input type="number" class="form-control" id="price" name="price" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Дополнительные опции</label>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="early_registration" name="early_registration">
+                                        <label class="form-check-label" for="early_registration">Ранняя регистрация</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="group_enrollment" name="group_enrollment">
+                                        <label class="form-check-label" for="group_enrollment">Групповое обучение</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="intensive_course" name="intensive_course">
+                                        <label class="form-check-label" for="intensive_course">Интенсивный курс</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="supplementary" name="supplementary">
+                                        <label class="form-check-label" for="supplementary">Дополнительные материалы</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="personalized" name="personalized">
+                                        <label class="form-check-label" for="personalized">Персональная программа</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="excursions" name="excursions">
+                                        <label class="form-check-label" for="excursions">Экскурсии</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="assessment" name="assessment">
+                                        <label class="form-check-label" for="assessment">Оценка знаний</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="interactive" name="interactive">
+                                        <label class="form-check-label" for="interactive">Интерактивные материалы</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="order-submit-btn" onclick="submitOrder()">Отправить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Подтверждение удаления</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Вы уверены, что хотите удалить заявку?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Нет</button>
+                    <button type="button" class="btn btn-danger" id="delete-confirm-btn" onclick="confirmDelete()">Да</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/main.js"></script>
