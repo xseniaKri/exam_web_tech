@@ -223,24 +223,14 @@ function editTutorOrder(order, tutor) {
     document.getElementById('time_start').value = order.time_start || '';
     document.getElementById('duration').value = order.duration || tutor.work_experience || 1;
     document.getElementById('persons').value = order.persons || 1;
-    document.getElementById('price').value = order.price || 0;
-    document.getElementById('early_registration').checked = order.early_registration;
-    document.getElementById('group_enrollment').checked = order.group_enrollment;
-    document.getElementById('intensive_course').checked = order.intensive_course;
-    document.getElementById('supplementary').checked = order.supplementary;
-    document.getElementById('personalized').checked = order.personalized;
-    document.getElementById('excursions').checked = order.excursions;
-    document.getElementById('assessment').checked = order.assessment;
-    document.getElementById('interactive').checked = order.interactive;
     
     document.getElementById('date_start').parentElement.style.display = 'block';
     document.getElementById('time_start').parentElement.style.display = 'block';
     document.getElementById('duration').parentElement.style.display = 'block';
-    document.getElementById('price').parentElement.style.display = 'block';
     
-    const optionsSection = document.querySelector('.modal-body form .mb-3:last-of-type');
-    if (optionsSection) {
-        optionsSection.style.display = 'block';
+    const costSection = document.getElementById('tutor-cost-section');
+    if (costSection) {
+        costSection.style.display = 'block';
     }
     
     document.getElementById('order-submit-btn').textContent = 'Сохранить';
@@ -253,7 +243,41 @@ function editTutorOrder(order, tutor) {
 }
 
 async function submitTutorOrderEdit() {
-    const formData = getOrderFormData();
+    const tutorSelect = document.getElementById('tutor_id');
+    const tutorId = parseInt(tutorSelect.value);
+    const tutor = allTutors.find(t => t.id === tutorId);
+    
+    if (!tutor) return;
+    
+    const costText = document.getElementById('tutor-total-cost').textContent;
+    const price = parseInt(costText.replace(/\D/g, ''));
+
+    const formData = {
+        tutor_id: tutorId,
+        course_id: null,
+        date_start: document.getElementById('date_start').value,
+        time_start: document.getElementById('time_start').value,
+        duration: parseInt(document.getElementById('duration').value) || tutor.work_experience || 1,
+        persons: parseInt(document.getElementById('persons').value) || 1,
+        price: price,
+        early_registration: false,
+        group_enrollment: false,
+        intensive_course: false,
+        supplementary: false,
+        personalized: false,
+        excursions: false,
+        assessment: false,
+        interactive: false
+    };
+
+    if (!formData.date_start) {
+        showAlert('danger', 'Выберите дату начала');
+        return;
+    }
+    if (!formData.time_start) {
+        showAlert('danger', 'Выберите время занятия');
+        return;
+    }
 
     try {
         const url = `${ORDERS_API}/${currentEditingOrderId}?api_key=${API_KEY}`;
@@ -276,7 +300,10 @@ async function submitTutorOrderEdit() {
         const modal = bootstrap.Modal.getInstance(document.getElementById('orderModal'));
         modal.hide();
         
-        resetOrderModalState();
+        const costSection = document.getElementById('tutor-cost-section');
+        if (costSection) {
+            costSection.style.display = 'none';
+        }
         
         const index = allOrders.findIndex(o => o.id === currentEditingOrderId);
         if (index !== -1) {
@@ -735,6 +762,7 @@ async function confirmDelete() {
     }
 }
 
+
 async function submitCourseApplication() {
     const course = window.currentCourseForApplication;
     if (!course) return;
@@ -799,4 +827,105 @@ async function submitCourseApplication() {
         showAlert('danger', error.message || 'Ошибка при отправке заявки');
     }
 }
+
+function setupTutorCostCalculationForEdit(tutor) {
+    const dateInput = document.getElementById('date_start');
+    const timeInput = document.getElementById('time_start');
+    const durationInput = document.getElementById('duration');
+    const personsInput = document.getElementById('persons');
+    
+    dateInput.addEventListener('change', calculateTutorCost);
+    timeInput.addEventListener('change', calculateTutorCost);
+    durationInput.addEventListener('input', calculateTutorCost);
+    personsInput.addEventListener('input', calculateTutorCost);
+    
+    document.querySelectorAll('#order-form input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', calculateTutorCost);
+    });
+}
+
+function calculateTutorCost() {
+    const tutorSelect = document.getElementById('tutor_id');
+    const tutorId = parseInt(tutorSelect.value);
+    const tutor = allTutors.find(t => t.id === tutorId);
+    
+    if (!tutor) return;
+    
+    const studentsCount = parseInt(document.getElementById('persons').value) || 1;
+    const duration = parseInt(document.getElementById('duration').value) || tutor.work_experience || 1;
+    const selectedTime = document.getElementById('time_start').value;
+    
+    let baseCost = 0;
+    let morningSurcharge = 0;
+    let eveningSurcharge = 0;
+    let weekendMultiplier = 1;
+    
+    const pricePerHour = tutor.price_per_hour || 500;
+    baseCost = pricePerHour * duration * studentsCount;
+    
+    if (selectedTime) {
+        const hour = parseInt(selectedTime.split(':')[0]);
+        if (hour >= 9 && hour < 12) {
+            morningSurcharge = 400 * studentsCount;
+        }
+        if (hour >= 18 && hour < 20) {
+            eveningSurcharge = 1000 * studentsCount;
+        }
+    }
+    
+    const selectedDate = document.getElementById('date_start').value;
+    if (selectedDate) {
+        const dayOfWeek = new Date(selectedDate).getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+            weekendMultiplier = 1.5;
+        }
+    }
+    
+    let totalBeforeDiscounts = (baseCost * weekendMultiplier + morningSurcharge + eveningSurcharge);
+    
+    let discounts = 0;
+    let additions = 0;
+    
+    const earlyRegistration = document.getElementById('early_registration')?.checked;
+    const groupEnrollment = document.getElementById('group_enrollment')?.checked;
+    const intensiveCourse = document.getElementById('intensive_course')?.checked;
+    const supplementary = document.getElementById('supplementary')?.checked;
+    const personalized = document.getElementById('personalized')?.checked;
+    const excursions = document.getElementById('excursions')?.checked;
+    const assessment = document.getElementById('assessment')?.checked;
+    const interactive = document.getElementById('interactive')?.checked;
+    
+    if (earlyRegistration) {
+        discounts += totalBeforeDiscounts * 0.1;
+    }
+    if (groupEnrollment && studentsCount >= 5) {
+        discounts += totalBeforeDiscounts * 0.15;
+    }
+    if (intensiveCourse) {
+        additions += totalBeforeDiscounts * 0.2;
+    }
+    if (supplementary) {
+        additions += 2000 * studentsCount;
+    }
+    if (personalized) {
+        additions += 1500 * duration;
+    }
+    if (excursions) {
+        additions += totalBeforeDiscounts * 0.25;
+    }
+    if (assessment) {
+        additions += 300 * studentsCount;
+    }
+    if (interactive) {
+        additions += totalBeforeDiscounts * 0.5;
+    }
+    
+    const finalTotal = totalBeforeDiscounts + additions - discounts;
+    
+    const costDisplay = document.getElementById('tutor-total-cost');
+    if (costDisplay) {
+        costDisplay.textContent = formatCurrency(finalTotal);
+    }
+}
+
 

@@ -353,3 +353,21 @@ a:hover {
     color: var(--color-purple);
 }
 
+.tutor-cost-display {
+    background: linear-gradient(135deg, var(--color-purple) 0%, var(--color-purple-dark) 100%);
+    color: white;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+}
+
+.tutor-cost-display .tutor-cost-value {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.tutor-cost-display .tutor-cost-label {
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+

@@ -218,12 +218,8 @@ function selectTutorAndApply(tutorId) {
     courseSelect.innerHTML = '<option value="">Курс не выбран</option>';
     courseSelect.disabled = true;
     
-    document.getElementById('duration').value = '';
-    document.getElementById('price').value = '0';
-    
-    document.querySelectorAll('#order-form input[type="checkbox"]').forEach(cb => {
-        cb.checked = false;
-    });
+    document.getElementById('duration').value = tutor.work_experience || 1;
+    document.getElementById('persons').value = 1;
     
     document.getElementById('order-submit-btn').textContent = 'Отправить';
     document.getElementById('order-submit-btn').onclick = submitTutorApplication;
@@ -231,14 +227,6 @@ function selectTutorAndApply(tutorId) {
     document.getElementById('date_start').parentElement.style.display = 'block';
     document.getElementById('time_start').parentElement.style.display = 'block';
     document.getElementById('duration').parentElement.style.display = 'block';
-    document.getElementById('price').parentElement.style.display = 'block';
-    
-    const optionsSection = document.querySelector('.modal-body form .mb-3:last-of-type');
-    if (optionsSection) {
-        optionsSection.style.display = 'block';
-    }
-    
-    document.getElementById('order-submit-btn').onclick = submitTutorApplication;
     
     const modal = new bootstrap.Modal(document.getElementById('orderModal'));
     modal.show();
@@ -682,6 +670,9 @@ async function submitTutorApplication() {
     const tutor = allTutors.find(t => t.id === parseInt(tutorId));
     if (!tutor) return;
 
+    const costText = document.getElementById('tutor-total-cost').textContent;
+    const price = parseInt(costText.replace(/\D/g, ''));
+
     const formData = {
         tutor_id: parseInt(tutorId),
         course_id: null,
@@ -689,15 +680,15 @@ async function submitTutorApplication() {
         time_start: document.getElementById('time_start').value,
         duration: parseInt(document.getElementById('duration').value) || tutor.work_experience || 1,
         persons: parseInt(document.getElementById('persons').value) || 1,
-        price: parseInt(document.getElementById('price').value) || 0,
-        early_registration: document.getElementById('early_registration').checked,
-        group_enrollment: document.getElementById('group_enrollment').checked,
-        intensive_course: document.getElementById('intensive_course').checked,
-        supplementary: document.getElementById('supplementary').checked,
-        personalized: document.getElementById('personalized').checked,
-        excursions: document.getElementById('excursions').checked,
-        assessment: document.getElementById('assessment').checked,
-        interactive: document.getElementById('interactive').checked
+        price: price,
+        early_registration: false,
+        group_enrollment: false,
+        intensive_course: false,
+        supplementary: false,
+        personalized: false,
+        excursions: false,
+        assessment: false,
+        interactive: false
     };
 
     if (!formData.date_start) {
@@ -802,14 +793,14 @@ function calculateTutorCost() {
     let discounts = 0;
     let additions = 0;
     
-    const earlyRegistration = document.getElementById('early_registration').checked;
-    const groupEnrollment = document.getElementById('group_enrollment').checked;
-    const intensiveCourse = document.getElementById('intensive_course').checked;
-    const supplementary = document.getElementById('supplementary').checked;
-    const personalized = document.getElementById('personalized').checked;
-    const excursions = document.getElementById('excursions').checked;
-    const assessment = document.getElementById('assessment').checked;
-    const interactive = document.getElementById('interactive').checked;
+    const earlyRegistration = document.getElementById('early_registration')?.checked;
+    const groupEnrollment = document.getElementById('group_enrollment')?.checked;
+    const intensiveCourse = document.getElementById('intensive_course')?.checked;
+    const supplementary = document.getElementById('supplementary')?.checked;
+    const personalized = document.getElementById('personalized')?.checked;
+    const excursions = document.getElementById('excursions')?.checked;
+    const assessment = document.getElementById('assessment')?.checked;
+    const interactive = document.getElementById('interactive')?.checked;
     
     if (earlyRegistration) {
         discounts += totalBeforeDiscounts * 0.1;
@@ -838,7 +829,7 @@ function calculateTutorCost() {
     
     const finalTotal = totalBeforeDiscounts + additions - discounts;
     
-    document.getElementById('price').value = Math.round(finalTotal);
+    document.getElementById('tutor-total-cost').textContent = formatCurrency(finalTotal);
 }
 
 function resetOrderModalState() {

@@ -133,63 +133,10 @@
                                 <label for="persons" class="form-label">Количество человек</label>
                                 <input type="number" class="form-control" id="persons" name="persons" min="1" max="20" required>
                             </div>
-                            <div class="col-md-4">
-                                <label for="price" class="form-label">Стоимость</label>
-                                <input type="number" class="form-control" id="price" name="price" required>
-                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Дополнительные опции</label>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="early_registration" name="early_registration">
-                                        <label class="form-check-label" for="early_registration">Ранняя регистрация</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="group_enrollment" name="group_enrollment">
-                                        <label class="form-check-label" for="group_enrollment">Групповое обучение</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="intensive_course" name="intensive_course">
-                                        <label class="form-check-label" for="intensive_course">Интенсивный курс</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="supplementary" name="supplementary">
-                                        <label class="form-check-label" for="supplementary">Дополнительные материалы</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="personalized" name="personalized">
-                                        <label class="form-check-label" for="personalized">Персональная программа</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="excursions" name="excursions">
-                                        <label class="form-check-label" for="excursions">Экскурсии</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="assessment" name="assessment">
-                                        <label class="form-check-label" for="assessment">Оценка знаний</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="interactive" name="interactive">
-                                        <label class="form-check-label" for="interactive">Интерактивные материалы</label>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="tutor-cost-display" id="tutor-cost-section" style="display: none;">
+                            <div class="tutor-cost-label">Стоимость занятия</div>
+                            <div class="tutor-cost-value" id="tutor-total-cost">0 ₽</div>
                         </div>
                     </form>
                 </div>
