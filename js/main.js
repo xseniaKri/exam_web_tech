@@ -16,6 +16,7 @@ let currentEditingOrderId = null;
 let currentDeletingOrderId = null;
 let selectedTutorId = null;
 let currentCourseForApplication = null;
+let filteredCourses = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Language School website loaded');
@@ -29,6 +30,7 @@ async function fetchCourses() {
         const response = await fetch(COURSES_API + '?api_key=' + API_KEY);
         if (!response.ok) throw new Error('Failed to fetch courses');
         allCourses = await response.json();
+        filteredCourses = [...allCourses];
         renderCourses();
     } catch (error) {
         console.error('Error fetching courses:', error);
@@ -60,12 +62,20 @@ async function fetchOrders() {
 function setupTutorSearchFilters() {
     const languageFilter = document.getElementById('tutor-language');
     const levelFilter = document.getElementById('tutor-level');
+    const qualificationFilter = document.getElementById('tutor-qualification');
+    const experienceFilter = document.getElementById('tutor-experience');
     
     if (languageFilter) {
-        languageFilter.addEventListener('change', renderTutors);
+        languageFilter.addEventListener('change', applyTutorFilters);
     }
     if (levelFilter) {
-        levelFilter.addEventListener('change', renderTutors);
+        levelFilter.addEventListener('change', applyTutorFilters);
+    }
+    if (qualificationFilter) {
+        qualificationFilter.addEventListener('change', applyTutorFilters);
+    }
+    if (experienceFilter) {
+        experienceFilter.addEventListener('input', applyTutorFilters);
     }
 }
 
@@ -138,16 +148,25 @@ function renderPagination(totalPages, container) {
 }
 
 function changePage(page) {
-    const totalPages = Math.ceil(allCourses.length / ITEMS_PER_PAGE);
+    let totalItems = allCourses;
+    let renderFunc = renderCourses;
+    
+    if (document.getElementById('course-search-name').value || document.getElementById('course-search-level').value) {
+        totalItems = filteredCourses;
+        renderFunc = renderFilteredCourses;
+    }
+    
+    const totalPages = Math.ceil(totalItems.length / ITEMS_PER_PAGE);
     if (page < 1 || page > totalPages) return;
     currentPage = page;
-    renderCourses();
+    renderFunc();
 }
 
 function renderTutors() {
     const tbody = document.getElementById('tutors-table-body');
     const languageFilter = document.getElementById('tutor-language').value;
     const levelFilter = document.getElementById('tutor-level').value;
+    const experienceFilter = parseInt(document.getElementById('tutor-experience').value) || 0;
     
     let filteredTutors = allTutors;
     
@@ -160,6 +179,12 @@ function renderTutors() {
     if (levelFilter) {
         filteredTutors = filteredTutors.filter(tutor => 
             tutor.language_level && tutor.language_level.toLowerCase() === levelFilter.toLowerCase()
+        );
+    }
+    
+    if (experienceFilter > 0) {
+        filteredTutors = filteredTutors.filter(tutor => 
+            (tutor.work_experience || 0) >= experienceFilter
         );
     }
     
@@ -907,5 +932,59 @@ async function confirmDelete() {
         console.error('Error deleting order:', error);
         showAlert('danger', error.message || 'Ошибка при удалении заявки');
     }
+}
+
+function searchCourses() {
+    const nameFilter = document.getElementById('course-search-name').value.toLowerCase().trim();
+    const levelFilter = document.getElementById('course-search-level').value;
+
+    filteredCourses = allCourses.filter(course => {
+        const nameMatch = !nameFilter || course.name.toLowerCase().includes(nameFilter);
+        const levelMatch = !levelFilter || course.level === levelFilter;
+        return nameMatch && levelMatch;
+    });
+
+    currentPage = 1;
+    renderFilteredCourses();
+}
+
+function renderFilteredCourses() {
+    const container = document.getElementById('courses-container');
+    const paginationContainer = document.getElementById('courses-pagination');
+
+    if (filteredCourses.length === 0) {
+        container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted mb-0">Курсы не найдены</p></div>';
+        paginationContainer.innerHTML = '';
+        return;
+    }
+
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const currentCourses = filteredCourses.slice(startIndex, endIndex);
+
+    container.innerHTML = currentCourses.map(course => `
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm course-card">
+                <div class="card-body">
+                    <h3 class="card-title h5 fw-bold mb-3">${course.name}</h3>
+                    <p class="card-text mb-2"><strong>Уровень:</strong> ${course.level}</p>
+                    <p class="card-text mb-2"><strong>Преподаватель:</strong> ${course.teacher}</p>
+                    <p class="card-text mb-3"><strong>Длительность:</strong> ${course.total_length} недель</p>
+                    <button class="btn btn-primary course-btn" onclick="openCourseApplicationModal(${course.id})">Подать заявку</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    const totalPages = Math.ceil(filteredCourses.length / ITEMS_PER_PAGE);
+    renderPagination(totalPages, paginationContainer);
+}
+
+function updateExperienceValue(value) {
+    document.getElementById('experience-display').textContent = value + '+ лет';
+}
+
+function applyTutorFilters() {
+    renderTutors();
 }
 
