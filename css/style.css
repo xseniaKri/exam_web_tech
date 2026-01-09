@@ -41,3 +41,47 @@ a:hover {
     color: var(--color-white);
 }
 
+.navbar-purple {
+    background-color: var(--color-purple);
+}
+
+.navbar-purple .navbar-toggler {
+    border-color: white;
+}
+
+.navbar-purple .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.85%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+.nav-link-purple {
+    color: white;
+    font-weight: 500;
+}
+
+.nav-link-purple:hover,
+.nav-link-purple:focus {
+    color: var(--color-purple-light);
+}
+
+.logo-icon {
+    flex-shrink: 0;
+}
+
+.brand-text {
+    color: white;
+    font-weight: 700;
+    font-family: var(--font-primary);
+}
+
+.nav-link-cabinet {
+    border: 1px solid white;
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    margin-left: 0.5rem;
+}
+
+.nav-link-cabinet:hover {
+    background-color: white;
+    color: var(--color-purple);
+}
+
