@@ -1,0 +1,43 @@
+:root {
+    --color-black: #000000;
+    --color-white: #ffffff;
+    --color-purple: #6f42c1;
+    --color-purple-light: #9775fa;
+    --color-purple-dark: #5a32a3;
+    --font-primary: 'JetBrains Mono', monospace;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-primary);
+    background-color: var(--color-white);
+    color: var(--color-black);
+    line-height: 1.6;
+}
+
+a {
+    color: var(--color-purple);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--color-purple-dark);
+}
+
+.btn-primary {
+    background-color: var(--color-purple);
+    border-color: var(--color-purple);
+    color: var(--color-white);
+}
+
+.btn-primary:hover {
+    background-color: var(--color-purple-dark);
+    border-color: var(--color-purple-dark);
+    color: var(--color-white);
+}
+
