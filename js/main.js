@@ -14,12 +14,14 @@ let allOrders = [];
 let currentPage = 1;
 let currentEditingOrderId = null;
 let currentDeletingOrderId = null;
+let selectedTutorId = null;
+let currentCourseForApplication = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Language School website loaded');
     fetchCourses();
     fetchTutors();
-    fetchOrders();
+    setupTutorSearchFilters();
 });
 
 async function fetchCourses() {
@@ -38,7 +40,8 @@ async function fetchTutors() {
         const response = await fetch(TUTORS_API + '?api_key=' + API_KEY);
         if (!response.ok) throw new Error('Failed to fetch tutors');
         allTutors = await response.json();
-        populateTutorsSelect();
+        populateTutorsLanguageFilter();
+        renderTutors();
     } catch (error) {
         console.error('Error fetching tutors:', error);
     }
@@ -49,25 +52,37 @@ async function fetchOrders() {
         const response = await fetch(ORDERS_API + '?api_key=' + API_KEY);
         if (!response.ok) throw new Error('Failed to fetch orders');
         allOrders = await response.json();
-        renderOrders();
     } catch (error) {
         console.error('Error fetching orders:', error);
     }
 }
 
-function populateTutorsSelect() {
-    const select = document.getElementById('tutor_id');
-    select.innerHTML = '<option value="">Выберите репетитора</option>' +
-        allTutors.map(tutor =>
-            `<option value="${tutor.id}">${tutor.name} (${tutor.language_level})</option>`
-        ).join('');
+function setupTutorSearchFilters() {
+    const languageFilter = document.getElementById('tutor-language');
+    const levelFilter = document.getElementById('tutor-level');
+    
+    if (languageFilter) {
+        languageFilter.addEventListener('change', renderTutors);
+    }
+    if (levelFilter) {
+        levelFilter.addEventListener('change', renderTutors);
+    }
 }
 
-function populateCoursesSelect() {
-    const select = document.getElementById('course_id');
-    select.innerHTML = '<option value="">Выберите курс</option>' +
-        allCourses.map(course =>
-            `<option value="${course.id}">${course.name}</option>`
+function populateTutorsLanguageFilter() {
+    const select = document.getElementById('tutor-language');
+    const languages = new Set();
+    
+    allTutors.forEach(tutor => {
+        if (tutor.languages_offered) {
+            tutor.languages_offered.forEach(lang => languages.add(lang));
+        }
+    });
+    
+    const sortedLanguages = Array.from(languages).sort();
+    select.innerHTML = '<option value="">Все языки</option>' +
+        sortedLanguages.map(lang =>
+            `<option value="${lang}">${lang}</option>`
         ).join('');
 }
 
@@ -87,7 +102,7 @@ function renderCourses() {
                     <p class="card-text mb-2"><strong>Уровень:</strong> ${course.level}</p>
                     <p class="card-text mb-2"><strong>Преподаватель:</strong> ${course.teacher}</p>
                     <p class="card-text mb-3"><strong>Длительность:</strong> ${course.total_length} недель</p>
-                    <a href="#" class="btn btn-primary course-btn">Подробнее</a>
+                    <button class="btn btn-primary course-btn" onclick="openCourseApplicationModal(${course.id})">Подать заявку</button>
                 </div>
             </div>
         </div>
@@ -129,6 +144,342 @@ function changePage(page) {
     renderCourses();
 }
 
+function renderTutors() {
+    const tbody = document.getElementById('tutors-table-body');
+    const languageFilter = document.getElementById('tutor-language').value;
+    const levelFilter = document.getElementById('tutor-level').value;
+    
+    let filteredTutors = allTutors;
+    
+    if (languageFilter) {
+        filteredTutors = filteredTutors.filter(tutor => 
+            tutor.languages_offered && tutor.languages_offered.includes(languageFilter)
+        );
+    }
+    
+    if (levelFilter) {
+        filteredTutors = filteredTutors.filter(tutor => 
+            tutor.language_level && tutor.language_level.toLowerCase() === levelFilter.toLowerCase()
+        );
+    }
+    
+    if (filteredTutors.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <p class="text-muted mb-0">Репетиторы не найдены</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = filteredTutors.map(tutor => `
+        <tr data-tutor-id="${tutor.id}" class="${selectedTutorId === tutor.id ? 'selected' : ''}" onclick="selectTutor(${tutor.id})">
+            <td>
+                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(tutor.name)}&background=6f42c1&color=fff&size=100" 
+                     alt="${tutor.name}" class="tutor-photo">
+            </td>
+            <td class="fw-medium">${tutor.name}</td>
+            <td>${tutor.language_level || '-'}</td>
+            <td>${tutor.languages_spoken ? tutor.languages_spoken.join(', ') : '-'}</td>
+            <td>${tutor.work_experience || 0}</td>
+            <td>${tutor.price_per_hour || 0} ₽</td>
+            <td>
+                <button class="btn btn-sm btn-primary btn-select" onclick="event.stopPropagation(); selectTutorAndApply(${tutor.id})">
+                    Выбрать
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function selectTutor(tutorId) {
+    selectedTutorId = tutorId;
+    renderTutors();
+}
+
+function selectTutorAndApply(tutorId) {
+    selectedTutorId = tutorId;
+    renderTutors();
+    const modal = new bootstrap.Modal(document.getElementById('orderModal'));
+    modal.show();
+}
+
+function openCourseApplicationModal(courseId) {
+    const course = allCourses.find(c => c.id === courseId);
+    if (!course) return;
+    
+    currentCourseForApplication = course;
+    
+    document.getElementById('application-course-id').value = course.id;
+    document.getElementById('application-course-name').value = course.name;
+    document.getElementById('application-teacher').value = course.teacher;
+    document.getElementById('application-duration').textContent = course.total_length + ' недель';
+    document.getElementById('application-week-length').textContent = course.week_length + ' часов';
+    
+    document.getElementById('application-date-start').innerHTML = '<option value="">Выберите дату</option>';
+    document.getElementById('application-time-start').innerHTML = '<option value="">Сначала выберите дату</option>';
+    document.getElementById('application-time-start').disabled = true;
+    document.getElementById('application-students').value = 1;
+    
+    document.querySelectorAll('#course-application-form input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+    });
+    
+    document.getElementById('applied-options').innerHTML = '';
+    
+    if (course.start_dates && course.start_dates.length > 0) {
+        const dateSelect = document.getElementById('application-date-start');
+        const uniqueDates = [...new Set(course.start_dates.map(d => d.split('T')[0]))];
+        dateSelect.innerHTML = '<option value="">Выберите дату</option>' +
+            uniqueDates.map(date => `<option value="${date}">${formatDate(date)}</option>`).join('');
+    }
+    
+    calculateTotalCost();
+    
+    const modal = new bootstrap.Modal(document.getElementById('courseApplicationModal'));
+    modal.show();
+}
+
+document.getElementById('application-date-start').addEventListener('change', function() {
+    const course = currentCourseForApplication;
+    const selectedDate = this.value;
+    
+    const timeSelect = document.getElementById('application-time-start');
+    
+    if (!selectedDate || !course || !course.start_dates) {
+        timeSelect.innerHTML = '<option value="">Сначала выберите дату</option>';
+        timeSelect.disabled = true;
+        calculateTotalCost();
+        return;
+    }
+    
+    const timeSlots = course.start_dates
+        .filter(d => d.startsWith(selectedDate))
+        .sort();
+    
+    timeSelect.innerHTML = '<option value="">Выберите время</option>' +
+        timeSlots.map(slot => {
+            const time = slot.split('T')[1].substring(0, 5);
+            const endHour = parseInt(time.split(':')[0]) + course.week_length;
+            const endTime = `${String(endHour).padStart(2, '0')}:${time.split(':')[1]}`;
+            return `<option value="${time}" data-end="${endTime}">${time} - ${endTime}</option>`;
+        }).join('');
+    
+    timeSelect.disabled = false;
+    calculateTotalCost();
+});
+
+document.getElementById('application-time-start').addEventListener('change', calculateTotalCost);
+document.getElementById('application-students').addEventListener('input', calculateTotalCost);
+
+function calculateTotalCost() {
+    const course = currentCourseForApplication;
+    if (!course) return;
+    
+    const studentsCount = parseInt(document.getElementById('application-students').value) || 1;
+    const selectedTimeOption = document.getElementById('application-time-start').selectedOptions[0];
+    const selectedTime = document.getElementById('application-time-start').value;
+    
+    let baseCost = 0;
+    let morningSurcharge = 0;
+    let eveningSurcharge = 0;
+    let weekendMultiplier = 1;
+    
+    const courseFeePerHour = course.course_fee_per_hour || 200;
+    const durationInHours = course.total_length * course.week_length;
+    const weekLength = course.week_length;
+    
+    baseCost = courseFeePerHour * durationInHours;
+    
+    if (selectedTime) {
+        const hour = parseInt(selectedTime.split(':')[0]);
+        if (hour >= 9 && hour < 12) {
+            morningSurcharge = 400 * studentsCount;
+        }
+        if (hour >= 18 && hour < 20) {
+            eveningSurcharge = 1000 * studentsCount;
+        }
+    }
+    
+    const selectedDate = document.getElementById('application-date-start').value;
+    if (selectedDate) {
+        const dayOfWeek = new Date(selectedDate).getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+            weekendMultiplier = 1.5;
+        }
+    }
+    
+    let totalBeforeDiscounts = (baseCost * weekendMultiplier + morningSurcharge + eveningSurcharge) * studentsCount;
+    
+    let discounts = 0;
+    let additions = 0;
+    
+    const earlyRegistration = document.getElementById('opt-early-registration').checked;
+    const groupEnrollment = document.getElementById('opt-group-enrollment').checked;
+    const intensiveCourse = document.getElementById('opt-intensive-course').checked;
+    const supplementary = document.getElementById('opt-supplementary').checked;
+    const personalized = document.getElementById('opt-personalized').checked;
+    const excursions = document.getElementById('opt-excursions').checked;
+    const assessment = document.getElementById('opt-assessment').checked;
+    const interactive = document.getElementById('opt-interactive').checked;
+    
+    if (earlyRegistration) {
+        discounts += totalBeforeDiscounts * 0.1;
+    }
+    if (groupEnrollment && studentsCount >= 5) {
+        discounts += totalBeforeDiscounts * 0.15;
+    }
+    if (intensiveCourse && weekLength >= 5) {
+        additions += totalBeforeDiscounts * 0.2;
+    }
+    if (supplementary) {
+        additions += 2000 * studentsCount;
+    }
+    if (personalized) {
+        additions += 1500 * course.total_length;
+    }
+    if (excursions) {
+        additions += totalBeforeDiscounts * 0.25;
+    }
+    if (assessment) {
+        additions += 300 * studentsCount;
+    }
+    if (interactive) {
+        additions += totalBeforeDiscounts * 0.5;
+    }
+    
+    const endDate = document.getElementById('application-date-start').value;
+    if (endDate && course.total_length) {
+        const startDate = new Date(endDate);
+        const endDateCalc = new Date(startDate);
+        endDateCalc.setDate(endDateCalc.getDate() + (course.total_length * 7));
+        document.getElementById('application-end-date').textContent = formatDate(endDateCalc.toISOString().split('T')[0]);
+    }
+    
+    const finalTotal = totalBeforeDiscounts + additions - discounts;
+    
+    document.getElementById('application-total-cost').textContent = formatCurrency(finalTotal);
+    
+    updateAppliedOptionsBadges({
+        earlyRegistration,
+        groupEnrollment: groupEnrollment && studentsCount >= 5,
+        intensiveCourse: intensiveCourse && weekLength >= 5,
+        supplementary,
+        personalized,
+        excursions,
+        assessment,
+        interactive
+    });
+}
+
+function updateAppliedOptionsBadges(options) {
+    const container = document.getElementById('applied-options');
+    const badges = [];
+    
+    if (options.earlyRegistration) {
+        badges.push('<span class="option-badge option-badge-discount">Ранняя регистрация -10%</span>');
+    }
+    if (options.groupEnrollment) {
+        badges.push('<span class="option-badge option-badge-discount">Групповая запись -15%</span>');
+    }
+    if (options.intensiveCourse) {
+        badges.push('<span class="option-badge option-badge-additional">Интенсивный курс +20%</span>');
+    }
+    if (options.supplementary) {
+        badges.push('<span class="option-badge option-badge-additional">Доп. материалы +2000₽</span>');
+    }
+    if (options.personalized) {
+        badges.push('<span class="option-badge option-badge-additional">Индивидуальные +1500₽/нед</span>');
+    }
+    if (options.excursions) {
+        badges.push('<span class="option-badge option-badge-additional">Экскурсии +25%</span>');
+    }
+    if (options.assessment) {
+        badges.push('<span class="option-badge option-badge-additional">Оценка +300₽</span>');
+    }
+    if (options.interactive) {
+        badges.push('<span class="option-badge option-badge-additional">Платформа +50%</span>');
+    }
+    
+    container.innerHTML = badges.length > 0 ? '<div class="mb-2">Применённые опции:</div>' + badges.join(' ') : '';
+}
+
+function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(amount);
+}
+
+async function submitCourseApplication() {
+    const course = currentCourseForApplication;
+    if (!course) return;
+    
+    const dateStart = document.getElementById('application-date-start').value;
+    const timeStart = document.getElementById('application-time-start').value;
+    const studentsCount = parseInt(document.getElementById('application-students').value) || 1;
+    
+    if (!dateStart) {
+        showAlert('danger', 'Выберите дату начала курса');
+        return;
+    }
+    if (!timeStart) {
+        showAlert('danger', 'Выберите время занятия');
+        return;
+    }
+    
+    const costText = document.getElementById('application-total-cost').textContent;
+    const price = parseInt(costText.replace(/\D/g, ''));
+    
+    const formData = {
+        course_id: course.id,
+        tutor_id: null,
+        date_start: dateStart,
+        time_start: timeStart,
+        duration: course.total_length * course.week_length,
+        persons: studentsCount,
+        price: price,
+        early_registration: document.getElementById('opt-early-registration').checked,
+        group_enrollment: document.getElementById('opt-group-enrollment').checked && studentsCount >= 5,
+        intensive_course: document.getElementById('opt-intensive-course').checked && course.week_length >= 5,
+        supplementary: document.getElementById('opt-supplementary').checked,
+        personalized: document.getElementById('opt-personalized').checked,
+        excursions: document.getElementById('opt-excursions').checked,
+        assessment: document.getElementById('opt-assessment').checked,
+        interactive: document.getElementById('opt-interactive').checked
+    };
+    
+    try {
+        const response = await fetch(ORDERS_API + '?api_key=' + API_KEY, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Ошибка при отправке заявки');
+        }
+        
+        showAlert('success', 'Заявка успешно отправлена!');
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('courseApplicationModal'));
+        modal.hide();
+        
+        fetchOrders();
+        
+    } catch (error) {
+        console.error('Error submitting application:', error);
+        showAlert('danger', error.message || 'Ошибка при отправке заявки');
+    }
+}
+
 function showAlert(type, message) {
     const container = document.getElementById('alert-container');
     const alert = document.createElement('div');
@@ -143,51 +494,20 @@ function showAlert(type, message) {
     }, 5000);
 }
 
-function renderOrders() {
-    const tbody = document.getElementById('orders-table-body');
-    const noOrdersMessage = document.getElementById('no-orders-message');
-    const table = document.querySelector('.orders-table');
+function populateTutorsSelect() {
+    const select = document.getElementById('tutor_id');
+    select.innerHTML = '<option value="">Выберите репетитора</option>' +
+        allTutors.map(tutor =>
+            `<option value="${tutor.id}">${tutor.name} (${tutor.language_level})</option>`
+        ).join('');
+}
 
-    if (allOrders.length === 0) {
-        table.classList.add('d-none');
-        noOrdersMessage.classList.remove('d-none');
-        return;
-    }
-
-    table.classList.remove('d-none');
-    noOrdersMessage.classList.add('d-none');
-
-    tbody.innerHTML = allOrders.map(order => {
-        const tutor = allTutors.find(t => t.id === order.tutor_id);
-        const course = allCourses.find(c => c.id === order.course_id);
-        const typeLabel = tutor ? `Репетитор: ${tutor.name}` : (course ? `Курс: ${course.name}` : '-');
-
-        const options = [];
-        if (order.early_registration) options.push('РР');
-        if (order.group_enrollment) options.push('ГО');
-        if (order.intensive_course) options.push('ИК');
-        if (order.supplementary) options.push('ДМ');
-        if (order.personalized) options.push('ПП');
-        if (order.excursions) options.push('Э');
-        if (order.assessment) options.push('ОЗ');
-        if (order.interactive) options.push('ИМ');
-
-        return `
-            <tr>
-                <td>${order.id}</td>
-                <td>${typeLabel}</td>
-                <td>${order.date_start}</td>
-                <td>${order.time_start}</td>
-                <td>${order.duration} ч.</td>
-                <td>${order.price} ₽</td>
-                <td>${options.length > 0 ? options.join(', ') : '-'}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editOrder(${order.id})">Ред.</button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteOrder(${order.id})">Удалить</button>
-                </td>
-            </tr>
-        `;
-    }).join('');
+function populateCoursesSelect() {
+    const select = document.getElementById('course_id');
+    select.innerHTML = '<option value="">Выберите курс</option>' +
+        allCourses.map(course =>
+            `<option value="${course.id}">${course.name}</option>`
+        ).join('');
 }
 
 function openOrderModal() {
@@ -197,6 +517,7 @@ function openOrderModal() {
     document.getElementById('order-form').reset();
     document.getElementById('order-id').value = '';
     populateCoursesSelect();
+    populateTutorsSelect();
 }
 
 function editOrder(orderId) {
@@ -224,6 +545,7 @@ function editOrder(orderId) {
     document.getElementById('interactive').checked = order.interactive;
 
     populateCoursesSelect();
+    populateTutorsSelect();
     document.getElementById('tutor_id').value = order.tutor_id || '';
     document.getElementById('course_id').value = order.course_id || '';
 
@@ -303,7 +625,6 @@ async function submitOrder() {
         } else {
             allOrders.push(result);
         }
-        renderOrders();
 
     } catch (error) {
         console.error('Error submitting order:', error);
@@ -337,7 +658,6 @@ async function confirmDelete() {
         modal.hide();
 
         allOrders = allOrders.filter(o => o.id !== currentDeletingOrderId);
-        renderOrders();
 
     } catch (error) {
         console.error('Error deleting order:', error);
