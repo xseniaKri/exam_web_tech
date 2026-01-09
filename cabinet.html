@@ -56,6 +56,7 @@
                             <th>Длительность</th>
                             <th>Стоимость</th>
                             <th>Опции</th>
+                            <th>Подробнее</th>
                             <th>Действия</th>
                         </tr>
                     </thead>
@@ -78,13 +79,14 @@
                     </div>
                 </div>
             </div>
+            <div id="orders-pagination" class="mt-4"></div>
         </div>
     </section>
 
     <footer id="contacts" class="py-4 bg-black text-white">
         <div class="container text-center">
             <p class="mb-0">&copy; 2024 Language School. Все права защищены.</p>
-            <p class="mb-0">Наш email: <a href="mailto:info@language-school.ru">info@lunch.ru</a></p>
+            <p class="mb-0">Наш email: <a href="mailto:info@language-school.ru">info@language-school.ru</a></p>
             <p class="mb-0">Наш телефон: <a href="tel:+79990000000">+7 999 000-00-00</a></p>
             <p class="mb-0">Часы работы: 10.00-20.00. ПН-ВС.</p>
             <div class="footer-social-links">
@@ -312,6 +314,22 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Нет</button>
                     <button type="button" class="btn btn-danger" id="delete-confirm-btn" onclick="confirmDelete()">Да</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Детали заявки</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="details-modal-body">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
                 </div>
             </div>
         </div>

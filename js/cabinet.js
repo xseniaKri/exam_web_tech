@@ -15,6 +15,7 @@ let currentPage = 1;
 let currentEditingOrderId = null;
 let currentDeletingOrderId = null;
 let currentCourseForApplication = null;
+let currentViewingOrderId = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Cabinet page loaded');
@@ -137,17 +138,26 @@ function renderOrders() {
     const tbody = document.getElementById('orders-table-body');
     const noOrdersMessage = document.getElementById('no-orders-message');
     const table = document.querySelector('.orders-table');
+    const paginationContainer = document.getElementById('orders-pagination');
 
     if (allOrders.length === 0) {
         table.classList.add('d-none');
         noOrdersMessage.classList.remove('d-none');
+        paginationContainer.innerHTML = '';
         return;
     }
 
     table.classList.remove('d-none');
     noOrdersMessage.classList.add('d-none');
 
-    tbody.innerHTML = allOrders.map(order => {
+    // Пагинация
+    const totalPages = Math.ceil(allOrders.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const paginatedOrders = allOrders.slice(startIndex, endIndex);
+
+    // Рендер заказов
+    tbody.innerHTML = paginatedOrders.map(order => {
         const tutor = allTutors.find(t => t.id === order.tutor_id);
         const course = allCourses.find(c => c.id === order.course_id);
         const typeLabel = tutor ? `Репетитор: ${tutor.name}` : (course ? `Курс: ${course.name}` : '-');
@@ -172,12 +182,155 @@ function renderOrders() {
                 <td>${order.price} ₽</td>
                 <td>${options.length > 0 ? options.join(', ') : '-'}</td>
                 <td>
+                    <button class="btn btn-sm btn-outline-info" onclick="showOrderDetails(${order.id})">Подробнее</button>
+                </td>
+                <td>
                     <button class="btn btn-sm btn-outline-primary me-1" onclick="editOrder(${order.id})">Ред.</button>
                     <button class="btn btn-sm btn-outline-danger" onclick="deleteOrder(${order.id})">Удалить</button>
                 </td>
             </tr>
         `;
     }).join('');
+
+    // Рендер пагинации
+    renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+    const container = document.getElementById('orders-pagination');
+    if (!container) return;
+
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let paginationHTML = '<nav><ul class="pagination justify-content-center mb-0">';
+
+    // Кнопка "Назад"
+    paginationHTML += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+        <button class="page-link" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'tabindex="-1"' : ''}>Назад</button>
+    </li>`;
+
+    // Номер страницы
+    for (let i = 1; i <= totalPages; i++) {
+        paginationHTML += `<li class="page-item ${currentPage === i ? 'active' : ''}">
+            <button class="page-link" onclick="goToPage(${i})">${i}</button>
+        </li>`;
+    }
+
+    // Кнопка "Вперёд"
+    paginationHTML += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+        <button class="page-link" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'tabindex="-1"' : ''}>Вперёд</button>
+    </li>`;
+
+    paginationHTML += '</ul></nav>';
+    container.innerHTML = paginationHTML;
+}
+
+function goToPage(page) {
+    const totalPages = Math.ceil(allOrders.length / ITEMS_PER_PAGE);
+    if (page < 1 || page > totalPages) return;
+    currentPage = page;
+    renderOrders();
+}
+
+function showOrderDetails(orderId) {
+    const order = allOrders.find(o => o.id === orderId);
+    if (!order) return;
+
+    currentViewingOrderId = orderId;
+    const tutor = allTutors.find(t => t.id === order.tutor_id);
+    const course = allCourses.find(c => c.id === order.course_id);
+
+    // Расчёт скидок и надбавок
+    let discounts = 0;
+    let additions = 0;
+    let discountDetails = [];
+    let additionDetails = [];
+
+    if (order.early_registration) {
+        discountDetails.push('Ранняя регистрация (-10%)');
+        discounts += order.price * 0.1;
+    }
+    if (order.group_enrollment) {
+        discountDetails.push('Групповое обучение (-15%)');
+        discounts += order.price * 0.15;
+    }
+
+    if (order.intensive_course) {
+        additionDetails.push('Интенсивный курс (+20%)');
+        additions += order.price * 0.2;
+    }
+    if (order.supplementary) {
+        additionDetails.push('Дополнительные материалы (+2000 ₽)');
+        additions += 2000;
+    }
+    if (order.personalized) {
+        additionDetails.push('Персональный план (+1500 ₽/нед.)');
+        additions += 1500;
+    }
+    if (order.excursions) {
+        additionDetails.push('Экскурсии (+25%)');
+        additions += order.price * 0.25;
+    }
+    if (order.assessment) {
+        additionDetails.push('Оценка знаний (+300 ₽/чел.)');
+        additions += 300;
+    }
+    if (order.interactive) {
+        additionDetails.push('Интерактивные материалы (+50%)');
+        additions += order.price * 0.5;
+    }
+
+    const modalBody = document.getElementById('details-modal-body');
+    modalBody.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="fw-bold mb-3">Основная информация</h6>
+                <p class="mb-1"><strong>ID заявки:</strong> ${order.id}</p>
+                <p class="mb-1"><strong>Тип:</strong> ${tutor ? 'Репетитор' : (course ? 'Курс' : '-')}</p>
+                <p class="mb-1"><strong>Название:</strong> ${tutor ? tutor.name : (course ? course.name : '-')}</p>
+                ${course ? `<p class="mb-1"><strong>Преподаватель:</strong> ${course.teacher || '-'}</p>` : ''}
+                <p class="mb-1"><strong>Дата начала:</strong> ${order.date_start}</p>
+                <p class="mb-1"><strong>Время:</strong> ${order.time_start}</p>
+                <p class="mb-1"><strong>Длительность:</strong> ${order.duration} ч.</p>
+                <p class="mb-1"><strong>Количество человек:</strong> ${order.persons || 1}</p>
+            </div>
+            <div class="col-md-6">
+                <h6 class="fw-bold mb-3">Расчёт стоимости</h6>
+                <p class="mb-1"><strong>Базовая стоимость:</strong> ${formatCurrency(order.price - additions + discounts)}</p>
+                ${discountDetails.length > 0 ? `
+                    <div class="text-success mb-1">
+                        <strong>Скидки:</strong><br>
+                        ${discountDetails.map(d => '• ' + d).join('<br>')}
+                        <span class="badge bg-success">-${formatCurrency(discounts)}</span>
+                    </div>
+                ` : ''}
+                ${additionDetails.length > 0 ? `
+                    <div class="text-warning mb-1">
+                        <strong>Надбавки:</strong><br>
+                        ${additionDetails.map(a => '• ' + a).join('<br>')}
+                        <span class="badge bg-warning text-dark">+${formatCurrency(additions)}</span>
+                    </div>
+                ` : ''}
+                <hr>
+                <p class="mb-0"><strong>Итоговая стоимость:</strong> <span class="fs-5 fw-bold">${formatCurrency(order.price)}</span></p>
+            </div>
+        </div>
+        ${course && course.description ? `
+            <hr>
+            <div class="row">
+                <div class="col-12">
+                    <h6 class="fw-bold mb-2">Описание курса</h6>
+                    <p class="mb-0">${course.description}</p>
+                </div>
+            </div>
+        ` : ''}
+    `;
+
+    const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+    modal.show();
 }
 
 function openOrderModal() {
