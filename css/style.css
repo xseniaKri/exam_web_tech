@@ -85,3 +85,16 @@ a:hover {
     color: var(--color-purple);
 }
 
+.alert-container {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    z-index: 1050;
+    max-width: 400px;
+    width: 100%;
+}
+
+.alert-container .alert {
+    margin-bottom: 10px;
+}
+
