@@ -200,10 +200,50 @@ function selectTutor(tutorId) {
 }
 
 function selectTutorAndApply(tutorId) {
+    const tutor = allTutors.find(t => t.id === tutorId);
+    if (!tutor) return;
+    
     selectedTutorId = tutorId;
     renderTutors();
+    
+    document.getElementById('orderModalTitle').textContent = 'Оформление заявки на репетитора';
+    document.getElementById('order-form').reset();
+    document.getElementById('order-id').value = '';
+    
+    const tutorSelect = document.getElementById('tutor_id');
+    tutorSelect.innerHTML = `<option value="${tutor.id}" selected>${tutor.name} (${tutor.language_level})</option>`;
+    tutorSelect.disabled = true;
+    
+    const courseSelect = document.getElementById('course_id');
+    courseSelect.innerHTML = '<option value="">Курс не выбран</option>';
+    courseSelect.disabled = true;
+    
+    document.getElementById('duration').value = '';
+    document.getElementById('price').value = '0';
+    
+    document.querySelectorAll('#order-form input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+    });
+    
+    document.getElementById('order-submit-btn').textContent = 'Отправить';
+    document.getElementById('order-submit-btn').onclick = submitTutorApplication;
+    
+    document.getElementById('date_start').parentElement.style.display = 'block';
+    document.getElementById('time_start').parentElement.style.display = 'block';
+    document.getElementById('duration').parentElement.style.display = 'block';
+    document.getElementById('price').parentElement.style.display = 'block';
+    
+    const optionsSection = document.querySelector('.modal-body form .mb-3:last-of-type');
+    if (optionsSection) {
+        optionsSection.style.display = 'block';
+    }
+    
+    document.getElementById('order-submit-btn').onclick = submitTutorApplication;
+    
     const modal = new bootstrap.Modal(document.getElementById('orderModal'));
     modal.show();
+    
+    setupTutorCostCalculation(tutor);
 }
 
 function openCourseApplicationModal(courseId) {
@@ -630,6 +670,200 @@ async function submitOrder() {
         console.error('Error submitting order:', error);
         showAlert('danger', error.message || 'Ошибка при сохранении заявки');
     }
+}
+
+async function submitTutorApplication() {
+    const tutorId = document.getElementById('tutor_id').value;
+    if (!tutorId) {
+        showAlert('danger', 'Репетитор не выбран');
+        return;
+    }
+
+    const tutor = allTutors.find(t => t.id === parseInt(tutorId));
+    if (!tutor) return;
+
+    const formData = {
+        tutor_id: parseInt(tutorId),
+        course_id: null,
+        date_start: document.getElementById('date_start').value,
+        time_start: document.getElementById('time_start').value,
+        duration: parseInt(document.getElementById('duration').value) || tutor.work_experience || 1,
+        persons: parseInt(document.getElementById('persons').value) || 1,
+        price: parseInt(document.getElementById('price').value) || 0,
+        early_registration: document.getElementById('early_registration').checked,
+        group_enrollment: document.getElementById('group_enrollment').checked,
+        intensive_course: document.getElementById('intensive_course').checked,
+        supplementary: document.getElementById('supplementary').checked,
+        personalized: document.getElementById('personalized').checked,
+        excursions: document.getElementById('excursions').checked,
+        assessment: document.getElementById('assessment').checked,
+        interactive: document.getElementById('interactive').checked
+    };
+
+    if (!formData.date_start) {
+        showAlert('danger', 'Выберите дату начала');
+        return;
+    }
+    if (!formData.time_start) {
+        showAlert('danger', 'Выберите время занятия');
+        return;
+    }
+
+    try {
+        const response = await fetch(ORDERS_API + '?api_key=' + API_KEY, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Ошибка при отправке заявки');
+        }
+
+        showAlert('success', 'Заявка на репетитора успешно создана');
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('orderModal'));
+        modal.hide();
+        
+        resetOrderModalState();
+        fetchOrders();
+
+    } catch (error) {
+        console.error('Error submitting tutor application:', error);
+        showAlert('danger', error.message || 'Ошибка при отправке заявки');
+    }
+}
+
+function setupTutorCostCalculation(tutor) {
+    const dateInput = document.getElementById('date_start');
+    const timeInput = document.getElementById('time_start');
+    const durationInput = document.getElementById('duration');
+    const personsInput = document.getElementById('persons');
+    
+    dateInput.value = '';
+    timeInput.value = '';
+    durationInput.value = tutor.work_experience || 1;
+    personsInput.value = 1;
+    
+    dateInput.addEventListener('change', calculateTutorCost);
+    timeInput.addEventListener('change', calculateTutorCost);
+    durationInput.addEventListener('input', calculateTutorCost);
+    personsInput.addEventListener('input', calculateTutorCost);
+    
+    document.querySelectorAll('#order-form input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', calculateTutorCost);
+    });
+    
+    calculateTutorCost();
+}
+
+function calculateTutorCost() {
+    const tutorSelect = document.getElementById('tutor_id');
+    const tutorId = parseInt(tutorSelect.value);
+    const tutor = allTutors.find(t => t.id === tutorId);
+    
+    if (!tutor) return;
+    
+    const studentsCount = parseInt(document.getElementById('persons').value) || 1;
+    const duration = parseInt(document.getElementById('duration').value) || tutor.work_experience || 1;
+    const selectedTime = document.getElementById('time_start').value;
+    
+    let baseCost = 0;
+    let morningSurcharge = 0;
+    let eveningSurcharge = 0;
+    let weekendMultiplier = 1;
+    
+    const pricePerHour = tutor.price_per_hour || 500;
+    baseCost = pricePerHour * duration * studentsCount;
+    
+    if (selectedTime) {
+        const hour = parseInt(selectedTime.split(':')[0]);
+        if (hour >= 9 && hour < 12) {
+            morningSurcharge = 400 * studentsCount;
+        }
+        if (hour >= 18 && hour < 20) {
+            eveningSurcharge = 1000 * studentsCount;
+        }
+    }
+    
+    const selectedDate = document.getElementById('date_start').value;
+    if (selectedDate) {
+        const dayOfWeek = new Date(selectedDate).getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+            weekendMultiplier = 1.5;
+        }
+    }
+    
+    let totalBeforeDiscounts = (baseCost * weekendMultiplier + morningSurcharge + eveningSurcharge);
+    
+    let discounts = 0;
+    let additions = 0;
+    
+    const earlyRegistration = document.getElementById('early_registration').checked;
+    const groupEnrollment = document.getElementById('group_enrollment').checked;
+    const intensiveCourse = document.getElementById('intensive_course').checked;
+    const supplementary = document.getElementById('supplementary').checked;
+    const personalized = document.getElementById('personalized').checked;
+    const excursions = document.getElementById('excursions').checked;
+    const assessment = document.getElementById('assessment').checked;
+    const interactive = document.getElementById('interactive').checked;
+    
+    if (earlyRegistration) {
+        discounts += totalBeforeDiscounts * 0.1;
+    }
+    if (groupEnrollment && studentsCount >= 5) {
+        discounts += totalBeforeDiscounts * 0.15;
+    }
+    if (intensiveCourse) {
+        additions += totalBeforeDiscounts * 0.2;
+    }
+    if (supplementary) {
+        additions += 2000 * studentsCount;
+    }
+    if (personalized) {
+        additions += 1500 * duration;
+    }
+    if (excursions) {
+        additions += totalBeforeDiscounts * 0.25;
+    }
+    if (assessment) {
+        additions += 300 * studentsCount;
+    }
+    if (interactive) {
+        additions += totalBeforeDiscounts * 0.5;
+    }
+    
+    const finalTotal = totalBeforeDiscounts + additions - discounts;
+    
+    document.getElementById('price').value = Math.round(finalTotal);
+}
+
+function resetOrderModalState() {
+    document.getElementById('order-form').reset();
+    document.getElementById('order-id').value = '';
+    
+    const tutorSelect = document.getElementById('tutor_id');
+    tutorSelect.disabled = false;
+    populateTutorsSelect();
+    
+    const courseSelect = document.getElementById('course_id');
+    courseSelect.disabled = false;
+    populateCoursesSelect();
+    
+    document.getElementById('date_start').parentElement.style.display = 'block';
+    document.getElementById('time_start').parentElement.style.display = 'block';
+    document.getElementById('duration').parentElement.style.display = 'block';
+    document.getElementById('price').parentElement.style.display = 'block';
+    
+    const optionsSection = document.querySelector('.modal-body form .mb-3:last-of-type');
+    if (optionsSection) {
+        optionsSection.style.display = 'block';
+    }
+    
+    document.getElementById('order-submit-btn').onclick = submitOrder;
 }
 
 function deleteOrder(orderId) {
