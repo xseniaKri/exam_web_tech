@@ -837,17 +837,36 @@ function resetOrderModalState() {
     document.getElementById('order-id').value = '';
     
     const tutorSelect = document.getElementById('tutor_id');
-    tutorSelect.disabled = false;
-    populateTutorsSelect();
+    if (tutorSelect) {
+        tutorSelect.disabled = false;
+        populateTutorsSelect();
+    }
     
     const courseSelect = document.getElementById('course_id');
-    courseSelect.disabled = false;
-    populateCoursesSelect();
+    if (courseSelect) {
+        courseSelect.disabled = false;
+        populateCoursesSelect();
+    }
     
-    document.getElementById('date_start').parentElement.style.display = 'block';
-    document.getElementById('time_start').parentElement.style.display = 'block';
-    document.getElementById('duration').parentElement.style.display = 'block';
-    document.getElementById('price').parentElement.style.display = 'block';
+    const dateStartEl = document.getElementById('date_start');
+    if (dateStartEl) {
+        dateStartEl.parentElement.style.display = 'block';
+    }
+    
+    const timeStartEl = document.getElementById('time_start');
+    if (timeStartEl) {
+        timeStartEl.parentElement.style.display = 'block';
+    }
+    
+    const durationEl = document.getElementById('duration');
+    if (durationEl) {
+        durationEl.parentElement.style.display = 'block';
+    }
+    
+    const priceEl = document.getElementById('price');
+    if (priceEl) {
+        priceEl.parentElement.style.display = 'block';
+    }
     
     const optionsSection = document.querySelector('.modal-body form .mb-3:last-of-type');
     if (optionsSection) {

@@ -443,39 +443,84 @@ function editGenericOrder(order) {
     document.getElementById('orderModalTitle').textContent = 'Редактирование заявки';
     document.getElementById('order-submit-btn').textContent = 'Сохранить';
     document.getElementById('order-id').value = order.id;
-    document.getElementById('tutor_id').value = order.tutor_id || '';
-    document.getElementById('course_id').value = order.course_id || '';
-    document.getElementById('date_start').value = order.date_start;
-    document.getElementById('time_start').value = order.time_start;
-    document.getElementById('duration').value = order.duration || '';
-    document.getElementById('persons').value = order.persons;
-    document.getElementById('price').value = order.price;
-    document.getElementById('early_registration').checked = order.early_registration;
-    document.getElementById('group_enrollment').checked = order.group_enrollment;
-    document.getElementById('intensive_course').checked = order.intensive_course;
-    document.getElementById('supplementary').checked = order.supplementary;
-    document.getElementById('personalized').checked = order.personalized;
-    document.getElementById('excursions').checked = order.excursions;
-    document.getElementById('assessment').checked = order.assessment;
-    document.getElementById('interactive').checked = order.interactive;
+    
+    const tutorSelect = document.getElementById('tutor_id');
+    if (tutorSelect) {
+        tutorSelect.value = order.tutor_id || '';
+    }
+    
+    const courseSelect = document.getElementById('course_id');
+    if (courseSelect) {
+        courseSelect.value = order.course_id || '';
+    }
+    
+    const dateStartEl = document.getElementById('date_start');
+    if (dateStartEl) {
+        dateStartEl.value = order.date_start;
+    }
+    
+    const timeStartEl = document.getElementById('time_start');
+    if (timeStartEl) {
+        timeStartEl.value = order.time_start;
+    }
+    
+    const durationEl = document.getElementById('duration');
+    if (durationEl) {
+        durationEl.value = order.duration || '';
+    }
+    
+    const personsEl = document.getElementById('persons');
+    if (personsEl) {
+        personsEl.value = order.persons;
+    }
+    
+    const priceEl = document.getElementById('price');
+    if (priceEl) {
+        priceEl.value = order.price;
+    }
+    
+    const checkboxIds = ['early_registration', 'group_enrollment', 'intensive_course', 'supplementary', 'personalized', 'excursions', 'assessment', 'interactive'];
+    checkboxIds.forEach(id => {
+        const checkbox = document.getElementById(id);
+        if (checkbox) {
+            checkbox.checked = order[id] || false;
+        }
+    });
 
     populateCoursesSelect();
     populateTutorsSelect();
-    document.getElementById('tutor_id').value = order.tutor_id || '';
-    document.getElementById('course_id').value = order.course_id || '';
+    
+    if (tutorSelect) {
+        tutorSelect.value = order.tutor_id || '';
+    }
+    if (courseSelect) {
+        courseSelect.value = order.course_id || '';
+    }
 
-    document.getElementById('date_start').parentElement.style.display = 'block';
-    document.getElementById('time_start').parentElement.style.display = 'block';
-    document.getElementById('duration').parentElement.style.display = 'block';
-    document.getElementById('price').parentElement.style.display = 'block';
+    if (dateStartEl) {
+        dateStartEl.parentElement.style.display = 'block';
+    }
+    if (timeStartEl) {
+        timeStartEl.parentElement.style.display = 'block';
+    }
+    if (durationEl) {
+        durationEl.parentElement.style.display = 'block';
+    }
+    if (priceEl) {
+        priceEl.parentElement.style.display = 'block';
+    }
     
     const optionsSection = document.querySelector('.modal-body form .mb-3:last-of-type');
     if (optionsSection) {
         optionsSection.style.display = 'block';
     }
     
-    document.getElementById('tutor_id').disabled = false;
-    document.getElementById('course_id').disabled = false;
+    if (tutorSelect) {
+        tutorSelect.disabled = false;
+    }
+    if (courseSelect) {
+        courseSelect.disabled = false;
+    }
     document.getElementById('order-submit-btn').onclick = submitGenericOrderEdit;
 
     const modal = new bootstrap.Modal(document.getElementById('orderModal'));
@@ -530,17 +575,41 @@ function resetOrderModalState() {
     document.getElementById('order-id').value = '';
     
     const tutorSelect = document.getElementById('tutor_id');
-    tutorSelect.disabled = false;
-    populateTutorsSelect();
+    if (tutorSelect) {
+        tutorSelect.disabled = false;
+        populateTutorsSelect();
+    }
     
     const courseSelect = document.getElementById('course_id');
-    courseSelect.disabled = false;
-    populateCoursesSelect();
+    if (courseSelect) {
+        courseSelect.disabled = false;
+        populateCoursesSelect();
+    }
     
-    document.getElementById('date_start').parentElement.style.display = 'block';
-    document.getElementById('time_start').parentElement.style.display = 'block';
-    document.getElementById('duration').parentElement.style.display = 'block';
-    document.getElementById('price').parentElement.style.display = 'block';
+    const dateStartEl = document.getElementById('date_start');
+    if (dateStartEl) {
+        dateStartEl.parentElement.style.display = 'block';
+    }
+    
+    const timeStartEl = document.getElementById('time_start');
+    if (timeStartEl) {
+        timeStartEl.parentElement.style.display = 'block';
+    }
+    
+    const durationEl = document.getElementById('duration');
+    if (durationEl) {
+        durationEl.parentElement.style.display = 'block';
+    }
+    
+    const priceEl = document.getElementById('price');
+    if (priceEl) {
+        priceEl.parentElement.style.display = 'block';
+    }
+    
+    const costSection = document.getElementById('tutor-cost-section');
+    if (costSection) {
+        costSection.style.display = 'none';
+    }
     
     const optionsSection = document.querySelector('.modal-body form .mb-3:last-of-type');
     if (optionsSection) {
@@ -649,22 +718,30 @@ function formatCurrency(amount) {
 }
 
 function getOrderFormData() {
+    const tutorSelect = document.getElementById('tutor_id');
+    const courseSelect = document.getElementById('course_id');
+    const dateStartEl = document.getElementById('date_start');
+    const timeStartEl = document.getElementById('time_start');
+    const durationEl = document.getElementById('duration');
+    const personsEl = document.getElementById('persons');
+    const priceEl = document.getElementById('price');
+    
     return {
-        tutor_id: document.getElementById('tutor_id').value ? parseInt(document.getElementById('tutor_id').value) : null,
-        course_id: document.getElementById('course_id').value ? parseInt(document.getElementById('course_id').value) : null,
-        date_start: document.getElementById('date_start').value,
-        time_start: document.getElementById('time_start').value,
-        duration: document.getElementById('duration').value ? parseInt(document.getElementById('duration').value) : null,
-        persons: parseInt(document.getElementById('persons').value),
-        price: parseInt(document.getElementById('price').value),
-        early_registration: document.getElementById('early_registration').checked,
-        group_enrollment: document.getElementById('group_enrollment').checked,
-        intensive_course: document.getElementById('intensive_course').checked,
-        supplementary: document.getElementById('supplementary').checked,
-        personalized: document.getElementById('personalized').checked,
-        excursions: document.getElementById('excursions').checked,
-        assessment: document.getElementById('assessment').checked,
-        interactive: document.getElementById('interactive').checked
+        tutor_id: tutorSelect && tutorSelect.value ? parseInt(tutorSelect.value) : null,
+        course_id: courseSelect && courseSelect.value ? parseInt(courseSelect.value) : null,
+        date_start: dateStartEl ? dateStartEl.value : '',
+        time_start: timeStartEl ? timeStartEl.value : '',
+        duration: durationEl && durationEl.value ? parseInt(durationEl.value) : null,
+        persons: personsEl ? parseInt(personsEl.value) : 1,
+        price: priceEl ? parseInt(priceEl.value) : 0,
+        early_registration: document.getElementById('early_registration')?.checked || false,
+        group_enrollment: document.getElementById('group_enrollment')?.checked || false,
+        intensive_course: document.getElementById('intensive_course')?.checked || false,
+        supplementary: document.getElementById('supplementary')?.checked || false,
+        personalized: document.getElementById('personalized')?.checked || false,
+        excursions: document.getElementById('excursions')?.checked || false,
+        assessment: document.getElementById('assessment')?.checked || false,
+        interactive: document.getElementById('interactive')?.checked || false
     };
 }
 
